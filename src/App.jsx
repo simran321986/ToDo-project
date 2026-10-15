@@ -2,28 +2,64 @@ import { useState } from 'react'
 import './App.css'
 
 function App() {
+  const [todos, setTodos] = useState([])
   const [task, setTask] = useState('')
-  const [tasks, setTasks] = useState([])
+  const [filter, setFilter] = useState('all')
+  const [editingId, setEditingId] = useState(null)
+  const [editText, setEditText] = useState('')
 
   function addTask() {
-    if (task.trim() === '') {
-      alert('Please enter a task!')
-      return
+    if (task.trim() === '') return
+
+    const newTodo = {
+      id: Date.now(),
+      text: task,
+      completed: false,
     }
 
-    setTasks([...tasks, { text: task, completed: false }])
+    setTodos([...todos, newTodo])
     setTask('')
   }
 
-  function toggleTask(index) {
-    const updatedTasks = [...tasks]
-    updatedTasks[index].completed = !updatedTasks[index].completed
-    setTasks(updatedTasks)
+  function deleteTask(id) {
+    setTodos(todos.filter((todo) => todo.id !== id))
   }
 
-  function deleteTask(index) {
-    setTasks(tasks.filter((_, i) => i !== index))
+  function toggleTask(id) {
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      )
+    )
   }
+
+  function startEditing(todo) {
+    setEditingId(todo.id)
+    setEditText(todo.text)
+  }
+
+  function saveEdit(id) {
+    if (editText.trim() === '') return
+
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id
+          ? { ...todo, text: editText }
+          : todo
+      )
+    )
+
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const filteredTodos = todos.filter((todo) => {
+    if (filter === 'pending') return !todo.completed
+    if (filter === 'completed') return todo.completed
+    return true
+  })
 
   return (
     <div className="app">
@@ -34,53 +70,69 @@ function App() {
         <div className="input-container">
           <input
             type="text"
-            placeholder="What do you need to do?"
+            placeholder="Enter your task"
             value={task}
             onChange={(e) => setTask(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTask()}
           />
 
           <button className="add-btn" onClick={addTask}>
-            + Add
+            Add Task
           </button>
         </div>
 
-        <h3>My Tasks ({tasks.length})</h3>
+        <div className="filters">
+          <button onClick={() => setFilter('all')}>All</button>
+          <button onClick={() => setFilter('pending')}>Pending</button>
+          <button onClick={() => setFilter('completed')}>Completed</button>
+        </div>
 
-        {tasks.length === 0 ? (
-          <p className="empty-message">
-            No tasks yet. Add your first task! ✨
-          </p>
+        <h3>My Tasks ({filteredTodos.length})</h3>
+
+        {filteredTodos.length === 0 ? (
+          <p className="empty-message">No tasks found! ✨</p>
         ) : (
           <ul className="task-list">
-            {tasks.map((item, index) => (
+            {filteredTodos.map((todo) => (
               <li
-                key={index}
-                className={item.completed ? 'completed' : ''}
+                key={todo.id}
+                className={todo.completed ? 'completed' : ''}
               >
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={item.completed}
-                    onChange={() => toggleTask(index)}
-                  />
-                  <span>{item.text}</span>
-                </label>
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => toggleTask(todo.id)}
+                />
 
-                <button
-                  className="delete-btn"
-                  onClick={() => deleteTask(index)}
-                >
+                {editingId === todo.id ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                    />
+
+                    <button onClick={() => saveEdit(todo.id)}>
+                      Save
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span>{todo.text}</span>
+
+                    <button onClick={() => startEditing(todo)}>
+                      Edit
+                    </button>
+                  </>
+                )}
+
+                <button onClick={() => deleteTask(todo.id)}>
                   Delete
                 </button>
               </li>
             ))}
           </ul>
         )}
-
-        <p className="footer">
-          Keep going! Every small step counts 💜
-        </p>
       </div>
     </div>
   )
